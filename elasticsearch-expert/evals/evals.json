@@ -1,0 +1,80 @@
+{
+  "skill_name": "elasticsearch-expert",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design an index mapping for an e-commerce product catalog with name, description, price, categories, and attributes that vary per product.",
+      "expected_output": "A mapping using text with keyword sub-field for name, text for description, scaled_float for price, keyword for categories, and flattened type for dynamic attributes. Should include a custom analyzer consideration for the name field.",
+      "files": [],
+      "assertions": [
+        "Uses text type with keyword sub-field for product name",
+        "Uses scaled_float or appropriate numeric for price",
+        "Recommends flattened or dynamic_templates for variable attributes",
+        "Does not use nested unless justified"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "My Elasticsearch query is slow. It uses from: 50000, size: 10 to paginate through results. How can I fix this?",
+      "expected_output": "Recommends replacing from/size with search_after and point-in-time (PIT) for deep pagination. Explains why from/size is expensive at high offsets and provides a complete search_after example.",
+      "files": [],
+      "assertions": [
+        "Identifies from/size as the performance problem",
+        "Recommends search_after with PIT",
+        "Provides a working JSON example",
+        "Mentions _shard_doc as tiebreaker sort"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have 500 GB of logs per day. How should I size my Elasticsearch cluster?",
+      "expected_output": "Calculates shard count (500/40 ~= 13 primary shards), recommends data tiers with ILM, estimates storage with replicas and overhead, advises on node sizing including heap and filesystem cache.",
+      "files": [],
+      "assertions": [
+        "Calculates primary shards based on 10-50 GB target",
+        "Accounts for replicas in total storage",
+        "Recommends ILM with hot/warm/cold tiers",
+        "Mentions heap sizing rules (50% RAM, max 31 GB)",
+        "Asks about or mentions retention requirements"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I want to add semantic search to my existing Elasticsearch text search. What are my options?",
+      "expected_output": "Presents options: dense_vector with external embeddings, ELSER for out-of-box semantic search, semantic_text field type for simplicity. Recommends hybrid search with RRF to combine lexical and semantic results.",
+      "files": [],
+      "assertions": [
+        "Mentions dense_vector with kNN",
+        "Mentions ELSER as an option",
+        "Recommends hybrid search approach",
+        "Explains RRF or linear combination for merging results",
+        "Asks about Elasticsearch version"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Write an ES|QL query to find the top 10 services by error count in the last hour from a logs index.",
+      "expected_output": "A correct ES|QL query using FROM, WHERE with timestamp filter and log level filter, STATS with COUNT, and SORT with LIMIT.",
+      "files": [],
+      "assertions": [
+        "Uses FROM logs-* or similar pattern",
+        "Filters by @timestamp >= NOW() - 1 hour",
+        "Filters by error log level",
+        "Uses STATS with COUNT grouped BY service",
+        "Uses SORT DESC and LIMIT 10"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "My cluster has 500 unassigned shards. How do I diagnose and fix this?",
+      "expected_output": "Recommends using _cluster/allocation/explain API, lists common causes (disk watermark, shard limits, node filters), provides remediation steps for each cause.",
+      "files": [],
+      "assertions": [
+        "Uses _cluster/allocation/explain API",
+        "Mentions disk watermark as a common cause",
+        "Mentions node filter or awareness rules",
+        "Provides actionable remediation steps"
+      ]
+    }
+  ]
+}
