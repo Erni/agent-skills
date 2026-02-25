@@ -5,7 +5,7 @@ An agent skill for [skills.sh](https://skills.sh) that provides deep Elasticsear
 ## Installation
 
 ```bash
-npx skills add Erni/elasticsearch-skill
+npx skills add https://github.com/Erni/agent-skills --skill elasticsearch-expert
 ```
 
 ## What This Skill Does
