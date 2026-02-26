@@ -12,11 +12,13 @@ npx skills add https://github.com/Erni/agent-skills --skill elasticsearch-expert
 
 When installed, this skill enhances an AI agent with expert-level Elasticsearch knowledge:
 
-- **Index Mapping Design** — Field type selection, multi-field patterns, dynamic templates, nested vs flattened strategies, mapping evolution
-- **Query Optimization** — Query DSL best practices, bool query composition, aggregation patterns, ES|QL, pagination strategies, profiling
-- **Cluster Architecture** — Shard sizing, node roles, data tiers (hot/warm/cold/frozen), ILM policies, capacity planning, ingest pipelines
-- **Vector Search & AI** — Dense vector configuration, kNN search, hybrid search (RRF), ELSER, inference API, quantization strategies
+- **Index Mapping Design** — Field type selection (including `pattern_text`, `exponential_histogram`), multi-field patterns, dynamic templates, nested vs flattened strategies, LogsDB/TSDB index modes, mapping evolution
+- **Query Optimization** — Query DSL best practices, bool query composition, geo queries, function_score, aggregation patterns, ES|QL (including LOOKUP JOIN, INLINE STATS), pagination strategies, profiling
+- **Cluster Architecture** — Shard sizing, node roles, data tiers (hot/warm/cold/frozen), ILM policies, LogsDB/TSDB, Failure Store, capacity planning, ingest pipelines
+- **Vector Search & AI** — Dense vector configuration, kNN search, Retrievers API (standard, knn, rrf, linear, text_similarity_reranker, rule, pinned, rescorer, diversify), ELSER, inference API, quantization (int8/int4/BBQ/DiskBBQ/bfloat16), ColPali/ColBERT
 - **Analysis & Text Processing** — Custom analyzers, language-specific stemming, autocomplete patterns
+- **Serverless Elasticsearch** — API limitations, alternative approaches, data retention policies
+- **Operational Troubleshooting** — Unassigned shards, circuit breakers, disk watermarks, slow queries, SRE aggregation recipes
 - **Security & Observability** — Field/document-level security, cluster health diagnostics, monitoring
 
 ## Project Structure
@@ -25,12 +27,14 @@ When installed, this skill enhances an AI agent with expert-level Elasticsearch 
 elasticsearch-skill/
 ├── SKILL.md                          # Main skill file (loaded when triggered)
 ├── references/
-│   ├── mapping-guide.md              # Detailed mapping patterns and pitfalls
-│   ├── query-patterns.md             # Query templates and anti-patterns
-│   ├── cluster-architecture.md       # Sizing, tiers, HA, production checklist
-│   └── vector-search.md             # kNN, hybrid search, ELSER, quantization
+│   ├── mapping-guide.md              # Mapping patterns, LogsDB, pattern_text, pitfalls
+│   ├── query-patterns.md             # Query templates, geo, function_score, ES|QL JOIN
+│   ├── cluster-architecture.md       # Sizing, tiers, LogsDB/TSDB, HA, production checklist
+│   ├── vector-search.md              # Retrievers, kNN, hybrid search, ELSER, quantization
+│   ├── version-changelog.md          # ES 9.0-9.3 features, breaking changes, migration
+│   └── operational-recipes.md        # Troubleshooting runbooks, SRE patterns, diagnostics
 ├── evals/
-│   └── evals.json                    # Test cases for skill validation
+│   └── evals.json                    # Test cases for skill validation (10 scenarios)
 └── README.md
 ```
 

@@ -384,6 +384,82 @@ POST _enrich/policy/user-enrich/_execute
 
 ---
 
+## LogsDB and TSDB Index Modes
+
+### LogsDB (8.17+, Default in 9.x for `logs-*-*`)
+
+LogsDB is a specialized index mode for log data. In 9.x, it is enabled by default for data streams matching `logs-*-*`.
+
+Key benefits:
+- Up to **4x storage reduction** via synthetic `_source` and automatic index sorting
+- ~16% additional storage reduction and ~19% indexing throughput improvement in 9.1+ vs. initial 8.17 implementation
+- Disk I/O reduced by ~50% by eliminating temporary recovery source writing (8.19/9.1)
+- Segment merging up to 40% faster with single-pass doc values optimization
+
+```json
+PUT _index_template/logs-template
+{
+  "index_patterns": ["logs-*"],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "index.mode": "logsdb"
+    }
+  }
+}
+```
+
+### TSDB (Time Series Data Streams)
+
+For metrics data with known dimensions:
+
+```json
+PUT _index_template/metrics-template
+{
+  "index_patterns": ["metrics-*"],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "index.mode": "time_series"
+    },
+    "mappings": {
+      "properties": {
+        "host": {
+          "type": "keyword",
+          "time_series_dimension": true
+        },
+        "cpu_usage": {
+          "type": "float",
+          "time_series_metric": "gauge"
+        },
+        "request_count": {
+          "type": "long",
+          "time_series_metric": "counter"
+        }
+      }
+    }
+  }
+}
+```
+
+TSDB benefits:
+- Automatic doc-value-only storage for dimensions
+- Downsampling support for long-term retention
+- Synthetic `_source` by default
+- Time series aggregation with sliding windows (9.3+)
+
+### Failure Store (9.2+ — Default for New Logs Data Streams)
+
+Failed documents are routed to a separate failure store instead of being rejected. This prevents data loss from mapping conflicts or ingest pipeline errors.
+
+```json
+GET _data_stream/logs-*?expand_wildcards=all
+```
+
+The failure store is queryable — inspect failed documents to diagnose and fix ingestion issues.
+
+---
+
 ## Production Checklist
 
 ### Before Go-Live
@@ -405,3 +481,13 @@ POST _enrich/policy/user-enrich/_execute
 - [ ] Monitoring enabled (Stack Monitoring or Elastic Agent)
 - [ ] `action.destructive_requires_name: true`
 - [ ] Recovery throttling configured for large clusters
+
+### Additional for 9.x
+- [ ] Reviewed 9.0 breaking changes before upgrade (see `version-changelog.md`)
+- [ ] Upgraded to 8.19 first, ran Upgrade Assistant
+- [ ] Enterprise Search removed/migrated if previously in use
+- [ ] LogsDB behavior understood for `logs-*-*` data streams
+- [ ] `elser` inference service migrated to `elasticsearch` service
+- [ ] S3 snapshot repos benefit from conditional writes (9.2+) — prevents corruption
+- [ ] Failure store enabled for logs data streams (9.2+ default)
+- [ ] Certificate-based remote cluster security migrated to API key auth (deprecated)

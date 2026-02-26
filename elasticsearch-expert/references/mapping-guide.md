@@ -31,6 +31,9 @@
 | Large unstructured JSON | `flattened` | Reduces mapping explosion risk |
 | Histograms / pre-aggregated | `histogram` | For pre-computed percentiles |
 | Bounded range values | `integer_range`, `date_range` | Meetings, reservations |
+| Log messages (9.3+) | `pattern_text` | Decomposed log storage, ~50% reduction |
+| OTel histograms (9.3+) | `exponential_histogram` | Pre-computed OpenTelemetry histograms |
+| Pre-aggregated keywords | `counted_keyword` | Pre-aggregated keyword counts |
 
 ### Numeric Type Guidance
 
@@ -269,3 +272,99 @@ POST _aliases
 6. **Not specifying date format** — Causes parsing failures when ingesting from multiple sources
 7. **Mapping explosion** — Unbounded dynamic fields (e.g., user-provided keys) rapidly hit field limits
 8. **Ignoring `_source` size** — Storing large payloads in `_source` when only a few fields are queried
+
+---
+
+## LogsDB Index Mode (8.17+, Default in 9.x)
+
+LogsDB is a specialized index mode for log data that uses synthetic `_source` reconstruction and automatic index sorting for significant storage savings.
+
+### Key Characteristics
+
+- **Enabled by default** in 9.x for data streams matching `logs-*-*`
+- Uses **synthetic `_source`** — `_source` is reconstructed from doc values and stored fields instead of being stored verbatim
+- **Automatic index sorting** by `host.name`, `@timestamp` for better compression
+- Up to **4x storage reduction** compared to standard index mode
+- Requires Enterprise license for synthetic `_source`
+
+### When to Use
+
+| Index Mode | Use When |
+|------------|----------|
+| Standard | General-purpose indices, entity data, catalogs |
+| LogsDB | Log data, event data, observability data streams |
+| TSDB | Metrics with known dimensions (time_series_dimension fields) |
+
+### Configuration
+
+```json
+PUT _index_template/logs-template
+{
+  "index_patterns": ["logs-*"],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "index.mode": "logsdb"
+    }
+  }
+}
+```
+
+### Limitations
+
+- Synthetic `_source` may reorder fields and deduplicate array values
+- Not all field types support synthetic `_source` — check compatibility
+- `_source` filtering behaves differently (operates on reconstructed source)
+
+---
+
+## pattern_text Field Type (9.3+ GA)
+
+The `pattern_text` type decomposes log messages into static template portions and dynamic variables, enabling much better compression than standard `text`.
+
+### Mapping
+
+```json
+{
+  "mappings": {
+    "properties": {
+      "message": {
+        "type": "pattern_text"
+      }
+    }
+  }
+}
+```
+
+### How It Works
+
+A log message like `User alice logged in from 192.168.1.1` is split into:
+- **Template**: `User {} logged in from {}`
+- **Variables**: `alice`, `192.168.1.1`
+
+A companion `message.template_id` field stores a hash of the template, useful for grouping similar log messages.
+
+### Configuration Options
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `analyzer` | Delimiter-based (splits on whitespace, `=?:[]{}\"\'`) | Controls tokenization |
+| `index_options` | `docs` | `docs` (faster indexing) or `positions` (enables phrase queries) |
+
+### Limitations
+
+- Single value per document only
+- No span queries (use interval queries instead)
+- No sorting support, limited aggregation capabilities
+- Best used with LogsDB index mode for maximum compression
+
+### Compression Tip
+
+Enable index sorting by `template_id` for significantly better compression:
+
+```json
+PUT my-index/_settings
+{
+  "index.logsdb.default_sort_on_message_template": true
+}
+```

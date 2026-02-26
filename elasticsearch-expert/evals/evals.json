@@ -75,6 +75,57 @@
         "Mentions node filter or awareness rules",
         "Provides actionable remediation steps"
       ]
+    },
+    {
+      "id": 7,
+      "prompt": "I'm using Elastic Cloud Serverless. Can I configure ILM policies and check cluster health?",
+      "expected_output": "Explains that ILM APIs and _cluster/health are not available in serverless. Recommends built-in data retention policies instead of ILM, and _cat/indices or _search as alternatives for health monitoring.",
+      "files": [],
+      "assertions": [
+        "States that _cluster/health is unavailable in serverless",
+        "States that ILM APIs are unavailable in serverless",
+        "Recommends data retention policies as alternative",
+        "Mentions _cat/indices or _search as serverless-compatible alternatives"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "I want to build a hybrid search that combines BM25 text search with vector similarity and then re-ranks using a cross-encoder model. I'm on Elasticsearch 9.2.",
+      "expected_output": "Recommends composing retrievers: use RRF or linear retriever to combine standard and knn retrievers, then wrap with text_similarity_reranker retriever pointing to an inference endpoint.",
+      "files": [],
+      "assertions": [
+        "Uses the Retrievers API (not manual script_score combination)",
+        "Combines standard and knn retrievers via rrf or linear",
+        "Uses text_similarity_reranker for re-ranking",
+        "Mentions inference_id for the reranker model",
+        "Provides a complete nested retriever JSON example"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "We're ingesting 200GB of logs per day into Elasticsearch 9.x. What index mode should we use and how can we optimize storage?",
+      "expected_output": "Recommends LogsDB index mode (default in 9.x for logs-*-*), explains synthetic _source and automatic index sorting benefits, suggests pattern_text for message fields (9.3+), recommends ILM with hot/warm/cold/frozen tiers.",
+      "files": [],
+      "assertions": [
+        "Recommends LogsDB index mode",
+        "Explains synthetic _source for storage reduction",
+        "Mentions pattern_text field type for message fields",
+        "Mentions up to 4x storage reduction with LogsDB",
+        "Recommends ILM or data retention policies"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "We're upgrading from Elasticsearch 8.16 to 9.0. What are the key breaking changes and migration steps?",
+      "expected_output": "States that 8.19 is required as a stepping stone before 9.0. Lists key breaking changes: Enterprise Search removal, AWS SDK v2 in repository-s3, ELSER inference service deprecation, LogsDB enabled by default. Recommends running the Upgrade Assistant.",
+      "files": [],
+      "assertions": [
+        "Requires upgrading to 8.19 first",
+        "Mentions Enterprise Search removal",
+        "Mentions ELSER inference service deprecation",
+        "Mentions LogsDB enabled by default for logs-*-*",
+        "Recommends using the Upgrade Assistant"
+      ]
     }
   ]
 }

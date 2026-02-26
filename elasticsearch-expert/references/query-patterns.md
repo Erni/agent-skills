@@ -282,6 +282,173 @@ FROM network-logs
 | LIMIT 20
 ```
 
+### LOOKUP JOIN (9.0+ Tech Preview)
+
+Cross-index joins not available in traditional Query DSL:
+
+```esql
+FROM employees
+| LOOKUP JOIN departments ON department_id
+| STATS avg_salary = AVG(salary) BY department_name
+| SORT avg_salary DESC
+```
+
+Multi-field LOOKUP JOIN (9.2+):
+
+```esql
+FROM orders
+| LOOKUP JOIN products ON product_id, region
+| EVAL total = quantity * unit_price
+| STATS revenue = SUM(total) BY category
+```
+
+### INLINE STATS (9.2+ Tech Preview)
+
+Compute statistics inline without collapsing rows:
+
+```esql
+FROM logs-*
+| WHERE @timestamp >= NOW() - 1 hour
+| INLINE STATS avg_duration = AVG(event.duration) BY service.name
+| EVAL deviation = event.duration - avg_duration
+| WHERE deviation > avg_duration * 2
+| SORT deviation DESC
+| LIMIT 20
+```
+
+### KQL Function in ES|QL (9.0+ Tech Preview)
+
+Use KQL syntax within ES|QL for familiar Kibana query patterns:
+
+```esql
+FROM logs-*
+| WHERE KQL("service.name: api-gateway AND log.level: ERROR")
+| STATS error_count = COUNT(*) BY url.path
+| SORT error_count DESC
+| LIMIT 10
+```
+
+---
+
+## Geo Queries
+
+### Geo Distance (Find within Radius)
+
+```json
+{
+  "query": {
+    "bool": {
+      "filter": {
+        "geo_distance": {
+          "distance": "10km",
+          "location": {
+            "lat": 40.7128,
+            "lon": -74.0060
+          }
+        }
+      }
+    }
+  },
+  "sort": [
+    {
+      "_geo_distance": {
+        "location": { "lat": 40.7128, "lon": -74.0060 },
+        "order": "asc",
+        "unit": "km"
+      }
+    }
+  ]
+}
+```
+
+### Geo Bounding Box
+
+```json
+{
+  "query": {
+    "bool": {
+      "filter": {
+        "geo_bounding_box": {
+          "location": {
+            "top_left": { "lat": 41.0, "lon": -74.5 },
+            "bottom_right": { "lat": 40.5, "lon": -73.5 }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Note**: Always use geo queries in `filter` context — geo calculations are expensive and don't contribute to relevance scoring.
+
+---
+
+## Function Score
+
+### Custom Scoring with Decay
+
+Boost results closer to a reference point (location, date, or number):
+
+```json
+{
+  "query": {
+    "function_score": {
+      "query": { "match": { "title": "restaurant" } },
+      "functions": [
+        {
+          "gauss": {
+            "location": {
+              "origin": { "lat": 40.7128, "lon": -74.0060 },
+              "scale": "5km",
+              "decay": 0.5
+            }
+          }
+        },
+        {
+          "gauss": {
+            "publish_date": {
+              "origin": "now",
+              "scale": "30d",
+              "decay": 0.5
+            }
+          }
+        }
+      ],
+      "score_mode": "multiply",
+      "boost_mode": "multiply"
+    }
+  }
+}
+```
+
+### Field Value Factor
+
+Boost by a numeric field (e.g., popularity):
+
+```json
+{
+  "query": {
+    "function_score": {
+      "query": { "match": { "title": "search term" } },
+      "field_value_factor": {
+        "field": "popularity",
+        "factor": 1.2,
+        "modifier": "log1p",
+        "missing": 1
+      }
+    }
+  }
+}
+```
+
+| Modifier | Formula | Use When |
+|----------|---------|----------|
+| `none` | `field * factor` | Linear boost |
+| `log1p` | `log(1 + field * factor)` | Diminishing returns (recommended for popularity) |
+| `log2p` | `log(2 + field * factor)` | Stronger diminishing returns |
+| `sqrt` | `sqrt(field * factor)` | Moderate diminishing returns |
+
 ---
 
 ## Performance Anti-Patterns
