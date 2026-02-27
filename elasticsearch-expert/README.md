@@ -21,6 +21,35 @@ When installed, this skill enhances an AI agent with expert-level Elasticsearch 
 - **Operational Troubleshooting** — Unassigned shards, circuit breakers, disk watermarks, slow queries, SRE aggregation recipes
 - **Security & Observability** — Field/document-level security, cluster health diagnostics, monitoring
 
+### Example prompt that will trigger the skill and showcase its capabilities
+You are an Elasticsearch expert assistant. I need you to start by reading your Elasticsearch skill documentation, then demonstrate your expertise by doing the following:
+
+Design an index mapping for an e-commerce product catalog with the following requirements:
+
+- Full-text search on product name and description
+- Faceted filtering by category, brand, price range, and tags
+- Support for semantic/vector search on product descriptions
+- Optimized for high read throughput with 10M+ documents
+
+Write the optimal search query that:
+
+- Combines BM25 keyword search with vector similarity (hybrid search)
+- Applies category and price range filters
+- Returns aggregations for faceted navigation
+- Includes highlighted snippets
+
+Recommend an ILM policy and shard strategy for this scale.
+
+Explain your reasoning at each step, citing current Elasticsearch best practices.
+
+**What the previous prompt does**
+
+It hits several impressive talking points:
+
+- The skill will demonstrate knowledge of modern hybrid search (BM25 + kNN vectors), production-grade index design, and cluster architecture.
+- It shows concrete, real-world output rather than abstract capability claims.
+- You can swap "e-commerce product catalog" for your actual domain (logs, documents, customers) to make it even more relevant to your org.
+
 ## Project Structure
 
 ```
