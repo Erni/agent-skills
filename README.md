@@ -1,18 +1,42 @@
-> **Note:** This repository contains Anthropic's implementation of skills for Agents. For information about the Agent Skills standard, see [agentskills.io](http://agentskills.io).
+# Agent Skills
 
-# Skills
-Skills are folders of instructions, scripts, and resources that an Agent loads dynamically to improve performance on specialized tasks. Skills teach Claude how to complete specific tasks in a repeatable way, whether that's creating documents with your company's brand guidelines, analyzing data using your organization's specific workflows, or automating personal tasks.
+> Specialized skills for AI agents — works with Claude, Claude Code, Cursor, GitHub Copilot, VS Code, OpenAI Codex, and [20+ other platforms](https://agentskills.io).
 
-For more information, check out:
+A collection (single-skill so far) of **Agent Skills** following the [open Agent Skills standard](https://agentskills.io). Each skill is a self-contained folder that teaches an AI agent how to complete a specialized task reliably — no copy-pasting prompts, no repeated context setup. Write once, use everywhere.
+
+## Skills
+
+### 🔍 `elasticsearch-expert`
+
+An expert-level Elasticsearch agent covering the full spectrum of search infrastructure — from first index to production cluster.
+
+**Triggers when you ask about:**
+- Index mapping design and field type selection
+- Query DSL, aggregations, and search performance
+- Cluster architecture, shard sizing, and ILM policies
+- Data streams, index templates, and ingest pipelines
+- Vector search, kNN, ELSER, and semantic search
+- Solr → Elasticsearch migrations
+- ES|QL and Kibana queries
+
+This skill searches the web to stay current with the latest Elasticsearch releases, so answers reflect the current version — not a training data snapshot.
+
+## How Skills Work
+
+Skills use **progressive disclosure** to stay lightweight on your context window:
+
+1. **Discovery** — At startup, the agent scans only skill names and descriptions (~30–50 tokens each).
+2. **Activation** — When a task matches, the full `SKILL.md` instructions are loaded.
+3. **On demand** — Supporting `scripts/`, `references/`, and `assets/` are fetched only as needed.
+
+You can keep dozens of skills available without burning your context budget.
+
+## Resources
+
+- [Agent Skills specification](https://agentskills.io/specification)
 - [What are skills?](https://support.claude.com/en/articles/12512176-what-are-skills)
 - [Equipping agents for the real world with Agent Skills](https://anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)
 
-# About This Repository
+---
 
-This repository contains skills. Skills might range from creative applications (art, music, design) to technical tasks (testing web apps, MCP server generation) to enterprise workflows (communications, branding, etc.).
-
-Each skill is self-contained in its own folder with a `SKILL.md` file containing the instructions and metadata that Claude uses. Browse through these skills to get inspiration for your own skills or to understand different patterns and approaches.
-
-## Disclaimer
-
-Always test skills thoroughly in your own environment before relying on them for critical tasks.
+> Always test skills in your own environment before using them in critical workflows.
