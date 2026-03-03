@@ -1,6 +1,6 @@
 # Elasticsearch Expert Skill
 
-An agent skill for [skills.sh](https://skills.sh) that provides deep Elasticsearch expertise covering index mapping design, query optimization, cluster architecture, vector search, and more.
+An agent skill that provides deep Elasticsearch expertise covering index mapping design, query optimization, cluster architecture, vector search, and more.
 
 ## Installation
 
