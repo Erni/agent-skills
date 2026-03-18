@@ -4,21 +4,49 @@ Key features, breaking changes, and migration guidance across Elasticsearch vers
 
 ---
 
-## Elasticsearch 9.3 (Latest Stable)
+## Elasticsearch 9.3 (Latest Stable — 9.3.2)
 
 ### New Features
 - **`pattern_text` field type (GA)**: Decomposes log messages into static templates and dynamic variables for ~50% storage reduction. Companion `<field>.template_id` field enables grouping similar messages
-- **`exponential_histogram` field type**: Native support for OpenTelemetry exponential histograms
+- **`exponential_histogram` field type**: Native support for OpenTelemetry exponential histograms — aggregatable in ES|QL with PERCENTILES, AVG, MIN, MAX, SUM
+- **`tdigest` field type (tech preview)**: Dedicated field type for T-Digest histogram data
 - **GPU-accelerated vector indexing (tech preview)**: NVIDIA cuVS integration for 12x indexing throughput improvement and 7x faster force merging
-- **`bfloat16` dense vector element type**: New storage option for dense vectors
+- **`bfloat16` dense vector element type**: New storage option for dense vectors — halves vector storage with minimal recall impact
 - **On-disk rescoring for vectors**: Direct I/O support for BBQ rescoring
 - **Binary doc value compression (Zstd)**: Further storage reduction via Zstd compression of doc values
-- **Doc values skippers**: Efficient querying without separate indexes
+- **Doc values skippers**: Efficient querying without separate indexes, enabled by default for TSDB indices
 - **Jina AI models (GA)**: jina-embeddings-v3, jina-reranker-v2-base-multilingual, jina-reranker-v3 via Elastic Inference Service
 - **Elastic Inference Service via Cloud Connect (GA)**: Self-managed clusters can offload inference to Elastic Cloud managed GPU infrastructure
-- **`diversify` retriever (tech preview)**: Reduces redundancy in top-N results
-- **Time series aggregations**: Sliding window support for TSDB
+- **`diversify` retriever (tech preview)**: Also known as MMR (Maximal Marginal Relevance) — reduces redundancy in top-N results
+- **Time series aggregations**: Sliding window support for TSDB — numeric block size increased from 128 to 512 for better compression
 - **CEF processor**: Common Event Format parsing in ingest nodes
+
+### ES|QL Promotions and New Commands
+- **LOOKUP JOIN (GA)**: Promoted from tech preview — now supports full-text functions and Lucene-pushable conditions on lookup index fields
+- **INLINE STATS (GA)**: Promoted from tech preview — inline statistical computation without collapsing rows
+- **FORK command (GA)**: Run multiple independent ES|QL queries in a single request with cross-cluster search support
+- **COMPLETION command (GA)**: LLM inference completion tasks directly in ES|QL pipelines
+- **RERANK command (GA)**: Inference-based reranking of ES|QL results
+
+### New ES|QL Functions
+- **Time-series**: `AVG_OVER_TIME`, `COUNT_OVER_TIME`, `DELTA`, `DERIV`, `INCREASE`, `IRATE`, `RATE`, `VARIANCE_OVER_TIME` (tech preview)
+- **Vector similarity**: `V_COSINE`, `V_DOT_PRODUCT`
+- **Spatial grid encoding**: `ST_GEOTILE`, `ST_GEOHEX`, `ST_GEOHASH`
+- **Multi-value**: `MV_INTERSECTION`
+- **Text**: `TOP_SNIPPETS` (tech preview), `CHUNK`
+- **Time range**: `TRANGE`
+- **Grouping**: `GROUP BY ALL` simplified syntax
+- **Conditional**: `CLAMP`, `CLAMP_MIN`, `CLAMP_MAX` (tech preview)
+
+### Ecosystem
+- **Elastic Agent Builder (GA)**: Build custom AI agents with ES|QL-backed tools
+- **Elastic Workflows (tech preview)**: Native orchestration triggered by rules, alerts, or agents
+- **Elastic Streams (tech preview)**: Agentic techniques for automatic log structuring
+
+### Serverless Improvements
+- Expanded to **18 global regions**
+- AWS infrastructure upgrade: **35% lower search latency**, **26% higher ingest throughput**
+- Cost alerts functionality added
 
 ---
 
@@ -28,7 +56,7 @@ Key features, breaking changes, and migration guidance across Elasticsearch vers
 - **Failure Store enabled by default**: For new logs data streams — failed documents routed to a separate failure store instead of being rejected
 - **LOOKUP JOIN on multiple fields**: Expanded join support in ES|QL
 - **DiskBBQ (`bbq_disk`) index type**: On-disk binary quantization for dense_vector fields — lower memory usage than in-memory BBQ
-- **INLINE STATS (tech preview)**: New ES|QL command for inline statistical computation
+- **INLINE STATS (tech preview → GA in 9.3)**: ES|QL command for inline statistical computation
 - **S3 conditional writes**: Repository-s3 uses conditional writes to prevent snapshot corruption
 - **Elastic Agent Builder MCP endpoint**: Built-in MCP server replaces the deprecated standalone `@elastic/mcp-server-elasticsearch` package
 - **Multi-field query format**: For linear and RRF retrievers (also backported to 8.19)
@@ -122,10 +150,15 @@ Key features, breaking changes, and migration guidance across Elasticsearch vers
 | `bbq_hnsw` quantization | 8.16 (preview) | GA (9.0) |
 | LogsDB index mode | 8.17 | GA (default in 9.x) |
 | `linear` retriever | 9.0 | GA |
-| ES\|QL LOOKUP JOIN | 9.0 | Tech preview |
+| ES\|QL LOOKUP JOIN | 9.0 | GA (9.3) |
+| ES\|QL INLINE STATS | 9.2 | GA (9.3) |
+| ES\|QL FORK | 9.3 | GA |
+| ES\|QL COMPLETION | 9.3 | GA |
+| ES\|QL RERANK | 9.3 | GA |
 | `bbq_disk` (DiskBBQ) | 9.2 | GA |
 | `pattern_text` field | 9.2 (preview) | GA (9.3) |
 | `exponential_histogram` | 9.3 | GA |
+| `tdigest` field | 9.3 | Tech preview |
 | `bfloat16` vectors | 9.3 | GA |
-| `diversify` retriever | 9.3 | Tech preview |
+| `diversify`/MMR retriever | 9.3 | Tech preview |
 | GPU vector indexing | 9.3 | Tech preview |

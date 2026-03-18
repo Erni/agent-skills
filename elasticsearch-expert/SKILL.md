@@ -1,6 +1,6 @@
 ---
 name: elasticsearch-expert
-description: Use this skill when working with Elasticsearch in any capacity — designing index mappings, writing or optimizing queries (Query DSL, ES|QL, KQL), planning cluster architecture, configuring ingest pipelines, tuning performance, troubleshooting cluster health, implementing search features, or building AI-powered search with retrievers. Activate whenever the user mentions Elasticsearch, OpenSearch, Elastic Stack, Kibana queries, Lucene-based search, vector/semantic/hybrid search with Elasticsearch, retrievers, LogsDB, TSDB, Elasticsearch Serverless, or any index/shard/mapping/analyzer topic.
+description: Use this skill when working with Elasticsearch in any capacity — designing index mappings, writing or optimizing queries (Query DSL, ES|QL, KQL), planning cluster architecture, configuring ingest pipelines, tuning performance, troubleshooting cluster health, implementing search features, or building AI-powered search with retrievers. Also activate for Elasticsearch security tasks — authentication, RBAC, API key management, audit logging, DLS/FLS, or security troubleshooting. Activate whenever the user mentions Elasticsearch, OpenSearch, Elastic Stack, Kibana queries, Lucene-based search, vector/semantic/hybrid search with Elasticsearch, retrievers, LogsDB, TSDB, Elasticsearch Serverless, ES|QL CATEGORIZE/CHANGE_POINT, or any index/shard/mapping/analyzer/security topic.
 ---
 
 # Elasticsearch Expert
@@ -51,13 +51,21 @@ Read `references/cluster-architecture.md` for sizing calculators, tier strategie
 - Use synonym filters (inline and file-based), stop words, and normalization
 - Design autocomplete solutions using `edge_ngram`, `completion` suggester, or `search_as_you_type`
 
-### 5. Security and Observability
-- Configure field-level and document-level security
-- Set up audit logging and monitoring with Kibana
+### 5. Security
+- **Authentication**: Understand realm types (native, file, LDAP/AD, SAML, OIDC, JWT, PKI, Kerberos) and their availability per deployment type (self-managed: all; Elastic Cloud: most; Serverless: API keys primarily)
+- **API key management**: Recommend scoped API keys with expiration over superuser credentials for routine operations. Always use environment variables — never hardcode or display credentials in chat/output
+- **RBAC**: Design custom roles with least-privilege index and cluster permissions. Use the `_security` API to check existing roles before creating new ones
+- **Document-level security (DLS)**: Use Mustache templates in role definitions for attribute-based access control — a single role can serve multiple departments by injecting user metadata
+- **Field-level security (FLS)**: Restrict visible fields within indices per role — combine with DLS for fine-grained access
+- **Audit logging**: Enable via cluster settings API (no restart required). Start with failure-focused configurations — capture authentication failures, access denials, and security changes while filtering high-volume success events. Correlate ES audit logs with Kibana via `trace.id` header
+- **Security troubleshooting**: Always start with `GET /_security/_authenticate` — it reveals identity, realm, roles, and auth type in a single call. Check license status early with `GET /_license` before investigating realm or privilege issues
+
+### 6. Observability
+- Set up monitoring with Kibana Stack Monitoring or Elastic Agent
 - Use the `_cat` APIs, cluster stats, and node stats for health assessment
 - Diagnose common issues: unassigned shards, circuit breaker trips, mapping explosions, slow GC
 
-### 6. Vector Search and AI Integration
+### 7. Vector Search and AI Integration
 - Design kNN search with `dense_vector` fields and HNSW algorithm tuning
 - Compose search pipelines using the **Retrievers API**: `standard`, `knn`, `rrf`, `linear`, `text_similarity_reranker`, `rule`, `pinned`, `rescorer`, `diversify`
 - Combine vector search with traditional lexical search using reciprocal rank fusion (RRF) or the `linear` retriever for weighted combination
@@ -68,7 +76,7 @@ Read `references/cluster-architecture.md` for sizing calculators, tier strategie
 
 Read `references/vector-search.md` for embedding strategies, hybrid search patterns, retriever composition, and quantization guidance.
 
-### 7. Serverless Elasticsearch
+### 8. Serverless Elasticsearch
 - Know which APIs are **unavailable** in Elastic Cloud Serverless: `_cluster/health`, `_cat/nodes`, `_nodes/*`, all `_ilm/*` endpoints, node-level stats, manual shard allocation
 - Use `_cat/indices` and `_search` as universal starting points in serverless
 - Serverless manages sharding, replication, and scaling automatically — do not advise on shard counts or node roles
@@ -76,7 +84,7 @@ Read `references/vector-search.md` for embedding strategies, hybrid search patte
 - Index templates, data streams, and ingest pipelines work normally in serverless
 - When the user mentions "Elastic Cloud Serverless" or "serverless", proactively note API limitations
 
-### 8. Operational Troubleshooting
+### 9. Operational Troubleshooting
 - Diagnose unassigned shards using `_cluster/allocation/explain`
 - Investigate circuit breaker trips via `_nodes/stats/breaker`
 - Resolve disk watermark issues (low: 85%, high: 90%, flood: 95%)
@@ -100,6 +108,9 @@ Warn users proactively when you see these patterns:
 8. **Not specifying date formats** — Causes parsing failures across sources. Always set `format` explicitly on date fields.
 9. **Using `nested` when `flattened` or `object` suffices** — Each nested doc is a hidden Lucene document. Only use `nested` when cross-field correlation within the same object is required.
 10. **Ignoring `_source` size** — Storing large payloads in `_source` when only a few fields are queried. Use `_source` filtering, `synthetic _source`, or `stored_fields`.
+11. **Guessing index or field names without discovery** — Index names and field names vary across deployments. Always discover first with `GET _cat/indices`, `GET <index>/_mapping`, or ES|QL `SHOW TABLES` / `DESCRIBE <index>` before writing queries.
+12. **Exposing credentials in agent or chat output** — Never echo API keys, passwords, or tokens in responses. Use environment variables for credentials and store them in `.env` files, not in code or conversation history.
+13. **Writing ES|QL with SQL syntax assumptions** — ES|QL is a pipe-based query language, not SQL. LLMs frequently hallucinate `SELECT`, `FROM ... WHERE`, `GROUP BY`, and `JOIN` syntax. Use `FROM | WHERE | STATS ... BY | SORT | LIMIT` pipe patterns instead.
 
 ## General Guidelines
 
@@ -116,6 +127,8 @@ Warn users proactively when you see these patterns:
 - For 9.x users: Enterprise Search has been removed — App Search, Workplace Search, and Elastic Web Crawler are no longer available
 - For 9.x users: The `elser` inference service is deprecated — use the `elasticsearch` service to access ELSER models
 - For 9.x users: Recommend the Retrievers API for composing search pipelines instead of manually combining queries
+- For 9.3+ users: ES|QL LOOKUP JOIN and INLINE STATS are now GA — recommend them for cross-index joins and inline statistical computation
+- For 9.3+ users: ES|QL COMPLETION and RERANK commands enable LLM inference and reranking directly in ES|QL pipelines
 - Use `pattern_text` field type for log message fields in 9.3+ to achieve ~50% storage reduction on message content
 
 ## Output Format

@@ -33,6 +33,7 @@
 | Bounded range values | `integer_range`, `date_range` | Meetings, reservations |
 | Log messages (9.3+) | `pattern_text` | Decomposed log storage, ~50% reduction |
 | OTel histograms (9.3+) | `exponential_histogram` | Pre-computed OpenTelemetry histograms |
+| T-Digest data (9.3+ preview) | `tdigest` | Dedicated T-Digest histogram data |
 | Pre-aggregated keywords | `counted_keyword` | Pre-aggregated keyword counts |
 
 ### Numeric Type Guidance

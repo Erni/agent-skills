@@ -282,7 +282,7 @@ FROM network-logs
 | LIMIT 20
 ```
 
-### LOOKUP JOIN (9.0+ Tech Preview)
+### LOOKUP JOIN (GA in 9.3)
 
 Cross-index joins not available in traditional Query DSL:
 
@@ -293,7 +293,7 @@ FROM employees
 | SORT avg_salary DESC
 ```
 
-Multi-field LOOKUP JOIN (9.2+):
+Multi-field LOOKUP JOIN (9.2+, GA in 9.3):
 
 ```esql
 FROM orders
@@ -302,7 +302,7 @@ FROM orders
 | STATS revenue = SUM(total) BY category
 ```
 
-### INLINE STATS (9.2+ Tech Preview)
+### INLINE STATS (GA in 9.3)
 
 Compute statistics inline without collapsing rows:
 
@@ -327,6 +327,91 @@ FROM logs-*
 | SORT error_count DESC
 | LIMIT 10
 ```
+
+### CATEGORIZE — Log Clustering (9.0+)
+
+Group similar log messages into categories without manual pattern definitions:
+
+```esql
+FROM logs-*
+| WHERE @timestamp >= NOW() - 1 hour
+| CATEGORIZE message
+| STATS count = COUNT(*) BY category
+| SORT count DESC
+| LIMIT 20
+```
+
+Use CATEGORIZE to identify recurring log patterns, spot anomalies, and reduce noise before writing specific queries.
+
+### CHANGE_POINT — Anomaly Detection (9.0+)
+
+Detect significant changes (spikes, dips, step changes, trend shifts) in time-series data:
+
+```esql
+FROM metrics-*
+| WHERE @timestamp >= NOW() - 24 hours
+| STATS avg_latency = AVG(event.duration) BY TBUCKET(@timestamp, 5 minutes)
+| CHANGE_POINT avg_latency ON @timestamp
+```
+
+CHANGE_POINT returns the type of change detected (`spike`, `dip`, `step_change`, `trend_change`, `distribution_change`) and the timestamp where it occurred.
+
+### TBUCKET — Time Bucketing (9.0+)
+
+Create time-based buckets for time-series aggregation (preferred over `DATE_TRUNC` for dashboards):
+
+```esql
+FROM logs-*
+| WHERE @timestamp >= NOW() - 6 hours
+| STATS error_count = COUNT(*) BY TBUCKET(@timestamp, 15 minutes), service.name
+| SORT @timestamp DESC
+```
+
+### COMPLETION — LLM Inference in ES|QL (GA 9.3)
+
+Run LLM inference directly in ES|QL pipelines:
+
+```esql
+FROM support-tickets
+| WHERE status == "open"
+| COMPLETION "Summarize this support ticket in one sentence" ON description WITH inference_id = "my-llm-endpoint"
+| KEEP ticket_id, description, completion
+```
+
+### RERANK — Inference Reranking in ES|QL (GA 9.3)
+
+Rerank ES|QL results using an inference model:
+
+```esql
+FROM knowledge-base
+| WHERE MATCH(content, "how to configure TLS")
+| RERANK "how to configure TLS" ON content WITH inference_id = "my-reranker"
+| LIMIT 10
+```
+
+### FORK — Parallel Queries (GA 9.3)
+
+Run multiple independent ES|QL queries in a single request:
+
+```esql
+FROM logs-*
+| WHERE @timestamp >= NOW() - 1 hour
+| FORK
+  ( | STATS error_count = COUNT(*) BY service.name | WHERE error_count > 100 ),
+  ( | STATS p95_latency = PERCENTILE(event.duration, 95) BY service.name ),
+  ( | CATEGORIZE message | STATS count = COUNT(*) BY category | SORT count DESC | LIMIT 5 )
+```
+
+### ES|QL Best Practices
+
+- **Schema discovery first**: Always discover available indices and check field mappings before writing queries. Never guess index or field names — they vary across deployments:
+  ```esql
+  SHOW TABLES
+  DESCRIBE my-index
+  ```
+- **Start bounded**: Include explicit time filters and `LIMIT` to optimize query performance
+- **Prefer ES|QL pipe syntax**: Do not write SQL-style `SELECT ... FROM ... WHERE ... GROUP BY`. ES|QL uses `FROM | WHERE | STATS ... BY | SORT | LIMIT`
+- **Use advanced functions**: Prefer `CATEGORIZE` for log clustering, `CHANGE_POINT` for anomaly detection, and `TBUCKET` for time-series bucketing over manual alternatives
 
 ---
 
@@ -491,6 +576,45 @@ Boost by a numeric field (e.g., popularity):
 ### 5. Deeply Nested Bool Queries
 **Problem**: Many nested bool layers are hard to optimize and often indicate flawed query construction.
 **Fix**: Flatten into a single `bool` with appropriate clauses.
+
+---
+
+## Bulk API Patterns
+
+### Basic Bulk Indexing
+
+```json
+POST _bulk
+{"index": {"_index": "my-index"}}
+{"title": "Document 1", "timestamp": "2024-01-01T00:00:00Z"}
+{"index": {"_index": "my-index"}}
+{"title": "Document 2", "timestamp": "2024-01-02T00:00:00Z"}
+```
+
+### Error Handling
+
+The `_bulk` API returns `200 OK` even when individual operations fail. **Always check `errors: true` in the response** and inspect individual item statuses:
+
+```json
+// Response with partial failures:
+{
+  "errors": true,
+  "items": [
+    { "index": { "_id": "1", "status": 201, "result": "created" } },
+    { "index": { "_id": "2", "status": 400, "error": { "type": "mapper_parsing_exception", "reason": "..." } } }
+  ]
+}
+```
+
+### Batch Sizing Guidelines
+
+| Batch Size | Use Case |
+|------------|----------|
+| 1-5 MB | General purpose — start here and tune |
+| 5-15 MB | High-throughput ingestion with fast nodes |
+| > 15 MB | Rarely optimal — increases memory pressure and risk of rejection |
+
+**Tune by size (MB), not by document count** — document sizes vary widely. Use `refresh_interval: -1` during bulk loading and restore afterward.
 
 ---
 

@@ -211,7 +211,7 @@ The Retrievers API (8.14+) provides a composable framework for building search p
 | `rule` | Contextual query rules to pin or exclude documents | GA (9.0+) |
 | `pinned` | Places specified documents at the top of results | GA (9.1+) |
 | `rescorer` | Replaces traditional query rescoring | GA (9.0+) |
-| `diversify` | Reduces redundancy in top-N results | Tech preview (9.3+) |
+| `diversify` (MMR) | Reduces redundancy in top-N results via Maximal Marginal Relevance | Tech preview (9.3+) |
 
 ### Linear Retriever — Weighted Hybrid Search
 
@@ -583,3 +583,50 @@ ColPali and ColBERT are multi-stage interaction models that work with MaxSim (Ma
 | ColPali/MaxSim | Visual document search (PDFs, images) | Highest memory, no OCR needed |
 
 These models are configured through the Inference API and can be combined with other retrievers for multi-stage retrieval pipelines.
+
+---
+
+## Diversify (MMR) Retriever
+
+### Overview (Tech Preview — 9.3+)
+
+The `diversify` retriever implements Maximal Marginal Relevance (MMR) to reduce redundancy in search results. It balances relevance against diversity — useful when top results are too similar (e.g., near-duplicate product descriptions, repetitive log messages).
+
+### Basic Usage
+
+```json
+POST my-index/_search
+{
+  "retriever": {
+    "diversify": {
+      "retriever": {
+        "knn": {
+          "field": "content_embedding",
+          "query_vector": [0.1, 0.2, ...],
+          "k": 50,
+          "num_candidates": 200
+        }
+      },
+      "field": "content_embedding",
+      "lambda": 0.5,
+      "rank_window_size": 50
+    }
+  }
+}
+```
+
+### Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `lambda` | Balance between relevance (1.0) and diversity (0.0). Default 0.5 |
+| `rank_window_size` | Number of top results to apply diversification on |
+| `field` | The vector field to use for similarity comparison |
+
+### When to Use
+
+| Approach | Best For |
+|----------|----------|
+| No diversification | Precision-focused search (e.g., finding exact answers) |
+| `diversify` with high lambda (0.7-0.9) | Slightly reduce duplicates while keeping relevance |
+| `diversify` with low lambda (0.3-0.5) | Strong diversity (e.g., product catalog exploration, recommendations) |
